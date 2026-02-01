@@ -1,0 +1,22 @@
+# History/Session
+.Rhistory
+.RData
+.Ruserdata
+
+# Project files
+.Rproj.user
+
+# Mac OS
+.DS_Store
+
+# Build artifacts (if any C/C++ code is added later)
+src/*.o
+src/*.so
+src/*.dll
+*.dylib
+
+# Vignettes (if built)
+inst/doc
+
+# Check results
+*.Rcheck/
