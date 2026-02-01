@@ -7,7 +7,7 @@ It is widely used to harmonize messy geographical data (survey responses, addres
 
 ## Key Features
 
-*   **Broad Coverage**: Supports all EU/EEA countries including DE, FR, IT, ES, PL, UK, CH, NO, etc.
+*   **Broad Coverage**: Supports all EU/EEA countries
 *   **English Exonym Support**: Handles common English names for major cities (e.g., "Munich" matches "München", "Prague" matches "Praha", "Florence" matches "Firenze", "Cologne" matches "Köln").
 *   **Robust Suburb Handling**:
     *   Normalizes suburb suffixes (e.g., "Garching b. München" -> "Garching", "Champs-sur-Marne" -> "Champs").
@@ -19,15 +19,6 @@ It is widely used to harmonize messy geographical data (survey responses, addres
     3.  **Fuzzy LAU Match**: Fuzzy string matching for slight variations (e.g., typos).
     4.  **Fuzzy NUTS Match**: Fallback to fuzzy NUTS identification.
 *   **Zero-Config Data**: All necessary geographical data (NUTS/LAU tables) is processed and bundled with the package.
-
-## Installation
-
-You can install `placematchr` directly from GitHub:
-
-```r
-# install.packages("devtools")
-devtools::install_github("yourusername/placematchr")
-```
 
 ## Usage
 
