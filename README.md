@@ -1,57 +1,62 @@
-# placematchr: City to NUTS Region Matching
 
-`placematchr` is an R package designed to normalize city names and map them to NUTS 3 regions for **Germany (DE)** and **Switzerland (CH)**. 
+# placematchr: Robust City Normalization and NUTS Matching for Europe
 
-It solves the common problem of inconsistent city naming in survey or administrative data (e.g., "Frankfurt (Oder)" vs "Frankfurt an der Oder", or "München" vs "Munich") by using a **cascading matching strategy** backed by official LAU (Local Administrative Units) data.
+`placematchr` is an R package designed to normalize city names and map them to standard **NUTS 3** and **LAU** (Local Administrative Units) codes across **32 European countries**.
 
-## Features
+It is widely used to harmonize messy geographical data (survey responses, address lists) with official regional identifiers for analysis.
 
-- **Robust Normalization**: Country-specific cleaning rules handling umlauts, dialects, suffixes, and common variations (e.g. "Frankfurt a.M." -> "frankfurt am main").
-- **Cascading Logic**: Matches are prioritized to ensuring the highest quality:
-    1.  **Exact NUTS Region Match**: Direct match to a major NUTS region name (e.g., "Berlin", "München").
-    2.  **Exact LAU Match**: Match to a specific municipality (LAU), mapped back to its parent NUTS region.
-    3.  **Fuzzy LAU Match**: String distance matching to the nearest municipality.
-    4.  **Fuzzy NUTS Match**: String distance matching to the nearest NUTS region name.
-- **Single Data Source**: Self-contained datasets (synthesized from official `NUTS_localadministrativeunits.xlsx`, downloaded from the [European Commission](https://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/administrative-units-statistical-units/nuts)), requiring no external file inputs during runtime.
+## Key Features
+
+*   **Broad Coverage**: Supports all EU/EEA countries including DE, FR, IT, ES, PL, UK, CH, NO, etc.
+*   **English Exonym Support**: Handles common English names for major cities (e.g., "Munich" matches "München", "Prague" matches "Praha", "Florence" matches "Firenze", "Cologne" matches "Köln").
+*   **Robust Suburb Handling**:
+    *   Normalizes suburb suffixes (e.g., "Garching b. München" -> "Garching", "Champs-sur-Marne" -> "Champs").
+    *   Correctly disambiguates complex cases like "Frankfurt (Oder)" vs "Frankfurt am Main".
+    *   Handles article inversions in Spanish/French (e.g., "Rozas, Las" -> "Las Rozas").
+*   **Cascading Matching Logic**:
+    1.  **Exact NUTS Match**: Checks if the normalized input matches a NUTS 3 region name directly (e.g., "Berlin").
+    2.  **Exact LAU Match**: Checks if it matches a Local Administrative Unit (e.g., "Garching").
+    3.  **Fuzzy LAU Match**: Fuzzy string matching for slight variations (e.g., typos).
+    4.  **Fuzzy NUTS Match**: Fallback to fuzzy NUTS identification.
+*   **Zero-Config Data**: All necessary geographical data (NUTS/LAU tables) is processed and bundled with the package.
+
+## Installation
+
+You can install `placematchr` directly from GitHub:
+
+```r
+# install.packages("devtools")
+devtools::install_github("yourusername/placematchr")
+```
 
 ## Usage
 
-### 1. Matching Cities to NUTS Regions
-
-The main function `match_city` automates the entire process:
-
+### Basic Matching
 ```r
 library(placematchr)
 
-cities <- c("Berlin", "Frankfurt (Oder)", "Überlingen", "Munich (typo)")
-results <- match_city(cities, country = "DE")
+# Match a single city in Germany
+match_city("Munich", country = "DE")
+# Returns data frame with NUTS_ID: DE212, Name: München, Landeshauptstadt
 
-print(results)
-#             original        city_clean                 lau_name nuts_3_id   match_type
-# 1             Berlin            berlin            Berlin, Stadt     DE300 Exact (NUTS)
-# 2   Frankfurt (Oder)    frankfurt oder  Frankfurt (Oder), Stadt     DE403 Exact (NUTS)
-# 3         Überlingen       ueberlingen        Überlingen, Stadt     DE147  Exact (LAU)
-# 4      Munich (typo)          muenchen München, Landeshauptstadt    DE212  Fuzzy (NUTS)
+# Match a list of cities in Italy
+cities <- c("Rome", "Milan", "Naples", "Venice")
+match_city(cities, country = "IT")
 ```
 
-### 2. Normalization Only
-
-If you only want to clean names without matching:
-
+### Handling Suburbs and Variations
 ```r
-normalize_city("München", country = "DE")
-#> [1] "muenchen"
+# Input: "Garching b. München" (Suburb)
+# Result: Matches "Garching" (LAU). Mapped to Munich District (NUTS).
+match_city("Garching b. München", country = "DE")
 
-normalize_city("Zürich", country = "CH")
-#> [1] "zuerich"
+# Input: "Champs-sur-Marne" (French Suburb)
+# Result: Matches "Champs" (LAU).
+match_city("Champs-sur-Marne", country = "FR")
 ```
 
-## Data Sources
-
-This package bundles processed data derived from the official EU `NUTS_localadministrativeunits.xlsx` file.
-- **`lau_de` / `lau_ch`**: Full lists of municipalities with their parent NUTS 3 codes.
-- **`nuts_de` / `nuts_ch`**: Synthesized list of NUTS 3 regions and their representative main cities.
+## Supported Countries
+BE, BG, CZ, DK, DE, EE, IE, EL, ES, FR, HR, IT, CY, LV, LT, LU, HU, MT, NL, AT, PL, PT, RO, SI, SK, FI, SE, LI, NO, CH, MK, TR, UK.
 
 ## License
-
 MIT

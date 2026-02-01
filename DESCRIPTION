@@ -1,6 +1,6 @@
 Package: placematchr
 Title: Normalize and Match City Names to NUTS Regions
-Version: 0.1.1
+Version: 0.2.01
 Date: 2026-02-01
 Authors@R: person("Giulian", "Etingin-Frati", email = "etingin-frati@kof.ethz.ch", role = c("aut", "cre"))
 Description: Normalizes city names for Germany (DE) and Switzerland (CH) and matches them to NUTS 3 regions using provided crosswalks. Features include comprehensive normalization rules, cascading matching logic (Exact NUTS -> Exact LAU -> Fuzzy), and single-source data synthesis.

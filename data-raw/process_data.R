@@ -17,14 +17,54 @@ process_lau_and_nuts <- function(file, sheet, country) {
     stop(sprintf("File %s not found!", file))
   }
   
-  raw <- read_excel(file, sheet = sheet)
+  # Read sheet safely
+  raw <- tryCatch({
+    read_excel(file, sheet = sheet)
+  }, error = function(e) {
+    warning(sprintf("Could not read sheet %s: %s", sheet, e$message))
+    return(NULL)
+  })
+  
+  if (is.null(raw) || nrow(raw) == 0) return(NULL)
+  
   df <- as.data.frame(raw)
   
-  # Standardize cols
-  df$lau_code <- df[["LAU CODE"]]
-  df$lau_name <- as.character(df[["LAU NAME NATIONAL"]])
-  df$nuts_3_id <- df[["NUTS 3 CODE"]]
-  df$population <- as.numeric(df[["POPULATION"]])
+  # Normalize column names slightly because they vary by sheet version sometimes
+  # We look for standard columns: LAU CODE, LAU NAME LATIN (or National if Latin missing), NUTS 3 CODE, POPULATION
+  
+  cols <- colnames(df)
+  # Helper to find valid col
+  find_col <- function(patterns) {
+    for (p in patterns) {
+      m <- grep(p, cols, ignore.case=TRUE)
+      if (length(m) > 0) {
+          # Check if col is mostly NAs
+          vals <- df[[m[1]]]
+          if (sum(!is.na(vals)) > 0) return(m[1])
+      }
+    }
+    return(NULL)
+  }
+  
+  col_lau_code <- find_col(c("LAU CODE", "LAU_CODE"))
+  col_lau_name <- find_col(c("LAU NAME LATIN", "LAU NAME NATIONAL", "LAU NAME"))
+  col_nuts <- find_col(c("NUTS 3 CODE", "NUTS_3_CODE"))
+  col_pop <- find_col(c("POPULATION", "POP"))
+  
+  if (is.null(col_lau_code) || is.null(col_lau_name) || is.null(col_nuts)) {
+    warning(sprintf("Skipping %s: Missing critical columns. Found: %s", country, paste(colnames(df), collapse=", ")))
+    return(NULL)
+  }
+  
+  df$lau_code <- df[[col_lau_code]]
+  df$lau_name <- as.character(df[[col_lau_name]])
+  df$nuts_3_id <- df[[col_nuts]]
+  
+  if (!is.null(col_pop)) {
+    df$population <- as.numeric(as.character(df[[col_pop]]))
+  } else {
+    df$population <- 0 # Default if missing
+  }
   
   # Normalize
   df$city_clean <- normalize_city(df$lau_name, country = country)
@@ -36,21 +76,19 @@ process_lau_and_nuts <- function(file, sheet, country) {
     distinct()
     
   # 2. Synthesize NUTS Dataset (Step 1 Targets)
-  # Fix: Use simpler aggregation to avoid vctrs/rlang version issues with slice_max
   
   # Get unique NUTS IDs and key info
   nuts_candidates <- df[!is.na(df$nuts_3_id), c("nuts_3_id", "lau_name", "population")]
   
-  # For each NUTS ID, find the row with max population
-  # Using base R 'ave' or 'order'
-  nuts_candidates <- nuts_candidates[order(nuts_candidates$nuts_3_id, -nuts_candidates$population), ]
+  # For each NUTS ID, find the row with max population using base R
+  nuts_candidates <- nuts_candidates[order(nuts_candidates$nuts_3_id, -as.numeric(nuts_candidates$population)), ]
   nuts_unique <- nuts_candidates[!duplicated(nuts_candidates$nuts_3_id), ]
   
   nuts_out <- nuts_unique %>%
     select(nuts_3_id, lau_name) %>%
     rename(nuts_label = lau_name)
     
-  # Normalize separately to avoid dplyr mutate errors if any
+  # Normalize separately
   nuts_out$city_clean <- normalize_city(nuts_out$nuts_label, country = country)
   nuts_out$priority <- 1
   
@@ -62,20 +100,29 @@ process_lau_and_nuts <- function(file, sheet, country) {
 # --- Main Execution ---
 lau_file <- "NUTS_localadministrativeunits.xlsx"
 
-# DE
-de_data <- process_lau_and_nuts(lau_file, "DE", "DE")
-lau_de <- de_data$lau
-nuts_de <- de_data$nuts
+# Get all country sheets
+# Exclude metadata sheets
+all_sheets <- readxl::excel_sheets(lau_file)
+skip_sheets <- c("File_info", "Overview", "Overview_Population")
+country_sheets <- setdiff(all_sheets, skip_sheets)
 
-# CH
-ch_data <- process_lau_and_nuts(lau_file, "CH", "CH")
-lau_ch <- ch_data$lau
-nuts_ch <- ch_data$nuts
+message(sprintf("Found %d countries to process: %s", length(country_sheets), paste(country_sheets, collapse=", ")))
 
-# --- Saving ---
-message("Saving embedded datasets...")
-save(lau_de, file = "../data/lau_de.rda", compress = "bzip2")
-save(lau_ch, file = "../data/lau_ch.rda", compress = "bzip2")
-save(nuts_de, file = "../data/nuts_de.rda", compress = "bzip2")
-save(nuts_ch, file = "../data/nuts_ch.rda", compress = "bzip2")
-message("Done.")
+for (country in country_sheets) {
+  res <- process_lau_and_nuts(lau_file, country, country)
+  
+  if (!is.null(res)) {
+    # Dynamically assign variables
+    assign(paste0("lau_", tolower(country)), res$lau)
+    assign(paste0("nuts_", tolower(country)), res$nuts)
+    
+    # Save
+    f_lau <- sprintf("../data/lau_%s.rda", tolower(country))
+    f_nuts <- sprintf("../data/nuts_%s.rda", tolower(country))
+    
+    save(list = paste0("lau_", tolower(country)), file = f_lau, compress = "bzip2")
+    save(list = paste0("nuts_", tolower(country)), file = f_nuts, compress = "bzip2")
+  }
+}
+
+message("Done processing all countries.")
