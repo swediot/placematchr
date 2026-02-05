@@ -2,4 +2,4 @@
 ^\.Rproj\.user$
 ^data-raw$
 ^\.DS_Store$
-
+^inst/extdata$
