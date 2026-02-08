@@ -19,8 +19,9 @@ Normalizes city names for EEA countries using comprehensive rules tailored to ea
 }
 \examples{
 # Normalize German city names
-normalize_city(c("München", "Köln", "Frankfurt a.M."), country = "DE")
+# Normalize German city names
+normalize_city(c("M\u00FCnchen", "K\u00F6ln", "Frankfurt a.M."), country = "DE")
 
 # Normalize Swiss city names
-normalize_city(c("Zürich", "Genève", "Basel-Stadt"), country = "CH")
+normalize_city(c("Z\u00FCrich", "Gen\u00E8ve", "Basel-Stadt"), country = "CH")
 }

@@ -7,10 +7,11 @@
 #' @return Character vector of normalized names.
 #' @examples
 #' # Normalize German city names
-#' normalize_city(c("München", "Köln", "Frankfurt a.M."), country = "DE")
+#' # Normalize German city names
+#' normalize_city(c("M\u00FCnchen", "K\u00F6ln", "Frankfurt a.M."), country = "DE")
 #'
 #' # Normalize Swiss city names
-#' normalize_city(c("Zürich", "Genève", "Basel-Stadt"), country = "CH")
+#' normalize_city(c("Z\u00FCrich", "Gen\u00E8ve", "Basel-Stadt"), country = "CH")
 #' @export
 normalize_city <- function(x, country = "DE") {
   country <- toupper(country)
@@ -84,22 +85,22 @@ normalize_city <- function(x, country = "DE") {
 # --- UTILITIES ---
 
 clean_basic <- function(x) {
-  x <- iconv(x, to = "UTF-8")
+  x <- enc2utf8(x)
   x <- tolower(x)
   x <- trimws(x)
   # Basic Latin replacements
-  x <- gsub("à|á|â|ã|å|ā|ă|ą", "a", x)
-  x <- gsub("è|é|ê|ë|ē|ę|ě", "e", x)
-  x <- gsub("ì|í|î|ï|ī", "i", x)
-  x <- gsub("ò|ó|ô|õ|ø|ō", "o", x)
-  x <- gsub("ù|ú|û|ü|ū|ů", "u", x)
-  x <- gsub("ý|ÿ", "y", x)
-  x <- gsub("ç|ć|č", "c", x)
-  x <- gsub("ñ|ń|ň", "n", x)
-  x <- gsub("ś|š|ş", "s", x)
-  x <- gsub("ź|ż|ž", "z", x)
-  x <- gsub("ł", "l", x)
-  x <- gsub("đ", "d", x)
+  x <- gsub("\u00E0|\u00E1|\u00E2|\u00E3|\u00E5|\u0101|\u0103|\u0105", "a", x)
+  x <- gsub("\u00E8|\u00E9|\u00EA|\u00EB|\u0113|\u0119|\u011B", "e", x)
+  x <- gsub("\u00EC|\u00ED|\u00EE|\u00EF|\u012B", "i", x)
+  x <- gsub("\u00F2|\u00F3|\u00F4|\u00F5|\u00F8|\u014D", "o", x)
+  x <- gsub("\u00F9|\u00FA|\u00FB|\u00FC|\u016B|\u016F", "u", x)
+  x <- gsub("\u00FD|\u00FF", "y", x)
+  x <- gsub("\u00E7|\u0107|\u010D", "c", x)
+  x <- gsub("\u00F1|\u0144|\u0148", "n", x)
+  x <- gsub("\u015B|\u0161|\u015F", "s", x)
+  x <- gsub("\u017A|\u017C|\u017E", "z", x)
+  x <- gsub("\u0142", "l", x)
+  x <- gsub("\u0111", "d", x)
 
   x <- gsub("\\(.*?\\)", "", x, perl = TRUE)
   x <- gsub("\\[.*?\\]", "", x, perl = TRUE)
@@ -113,7 +114,7 @@ clean_basic <- function(x) {
 
 # --- GERMAN (DE) ---
 normalize_city_de <- function(x) {
-  x <- iconv(x, to = "UTF-8")
+  x <- enc2utf8(x)
 
   # 0. Critical Pre-Clean Overrides
   # Must handle "Frankfurt (Oder)" before parens are stripped by clean_basic
@@ -129,10 +130,11 @@ normalize_city_de <- function(x) {
   x <- gsub("^frankfort.*", "frankfurt", x, ignore.case = TRUE)
 
   # Umlaut Standardization (Crucial for matching u/ue variants)
-  x <- gsub("ä", "ae", x)
-  x <- gsub("ö", "oe", x)
-  x <- gsub("ü", "ue", x)
-  x <- gsub("ß", "ss", x)
+  # Umlaut Standardization (Crucial for matching u/ue variants)
+  x <- gsub("\u00E4", "ae", x)
+  x <- gsub("\u00F6", "oe", x)
+  x <- gsub("\u00FC", "ue", x)
+  x <- gsub("\u00DF", "ss", x)
 
   # Handle "b." and "b.Name" (no space)
   # Replace "b." followed by anything with "bei " to standardize
@@ -172,10 +174,10 @@ normalize_city_de <- function(x) {
   # Hamburg
   x <- gsub("^hamburg[ -]?(mitte|altona|eimsbuettel|nord|wandsbek|bergedorf|harburg)$", "hamburg", x, perl = TRUE)
 
-  # Munich (München)
+  # Munich (M\u00FCnchen)
   x <- gsub("^muenchen[ -]?(altstadt|lehel|ludwigsvorstadt|isarvorstadt|maxvorstadt|schwabing|au|haidhausen|sendling|binn|moosach|milbertshofen|am hart|schwabing|freimann|bogenhausen|perlach|trudering|riem|ramersdorf|obergiesing|fasangarten|untergiesing|harlaching|thalkirchen|obersendling|forstenried|fuerstenried|solln|hadern|pasing|obermenzing|aubing|lochhausen|langwied|allach|untermenzing|feldmoching|hasenbergl|laim)$", "muenchen", x, perl = TRUE)
 
-  # Cologne (Köln)
+  # Cologne (K\u00F6ln)
   x <- gsub("^koeln[ -]?(innenstadt|rodenkirchen|lindenthal|ehrenfeld|nippes|chorweiler|porz|kalk|muelheim)$", "koeln", x, perl = TRUE)
 
   # Frankfurt am Main override
@@ -184,7 +186,7 @@ normalize_city_de <- function(x) {
   # Stuttgart
   x <- gsub("^stuttgart[ -]?(mitte|nord|ost|sued|west|bad cannstatt|birkach|botnang|degerloch|feuerbach|hedelfingen|moehringen|muehlhausen|muenster|obertuerkheim|plieningen|sillenbuch|stammheim|untertuerkheim|vaihingen|wangen|weilimdorf|zuffenhausen)$", "stuttgart", x, perl = TRUE)
 
-  # Düsseldorf
+  # D\u00FCsseldorf
   x <- gsub("^duesseldorf[ -]?(stadtbezirk \\d+|altstadt|carlstadt|derendorf|golzheim|pemelfort|unterbilk|bilk|oberkassel|heerdt|lierenfeld|eller|benrath|wersten)$", "duesseldorf", x, perl = TRUE)
 
   # Dortmund
@@ -216,7 +218,7 @@ normalize_city_at <- function(x) {
   regex_graz <- paste0("^(?:graz[ -]?)?(?:", paste(graz_districts, collapse = "|"), ")$")
   x <- gsub(regex_graz, "graz", x, perl = TRUE)
 
-  # Mödling bei Wien
+  # M\u00F6dling bei Wien
   x <- gsub("^moedling.*", "moedling", x, perl = TRUE)
   # Klosterneuburg
   x <- gsub("^klosterneuburg.*", "klosterneuburg", x, perl = TRUE)
@@ -228,6 +230,9 @@ normalize_city_at <- function(x) {
 
 # --- SWITZERLAND (CH) ---
 normalize_city_ch <- function(x) {
+  x <- gsub("\u00E4", "ae", x)
+  x <- gsub("\u00F6", "oe", x)
+  x <- gsub("\u00FC", "ue", x)
   x <- clean_basic(x)
   x <- gsub("\\b(gemeinde|commune|comune|vischnanca)\\b", "", x, perl = TRUE)
   x <- gsub("\\b(bei|am|an|sur|scuol)\\b", "", x, perl = TRUE)
@@ -396,16 +401,16 @@ normalize_city_nl <- function(x) {
 
 # --- SCANDINAVIAN (DK, NO, SE) ---
 normalize_city_scandi <- function(x, country) {
-  x <- iconv(x, to = "UTF-8")
+  x <- enc2utf8(x)
   x <- tolower(x)
 
   # Exonyms (Pre-clean)
   if (country == "DK") x <- gsub("^copenhagen", "koebenhavn", x, ignore.case = TRUE)
   if (country == "SE") x <- gsub("^gothenburg", "goeteborg", x, ignore.case = TRUE)
 
-  x <- gsub("å", "aa", x)
-  x <- gsub("ä|æ", "ae", x)
-  x <- gsub("ö|ø", "oe", x)
+  x <- gsub("\u00E5", "aa", x)
+  x <- gsub("\u00E4|\u00E6", "ae", x)
+  x <- gsub("\u00F6|\u00F8", "oe", x)
   x <- clean_basic(x)
   x <- gsub("\\b(kommune|kommun|stad|by|stadsdelsomraade)\\b", "", x, perl = TRUE)
 
@@ -432,10 +437,10 @@ normalize_city_scandi <- function(x, country) {
 
 # --- Others (stubs using generic) ---
 normalize_city_fi <- function(x) {
-  x <- gsub("ä", "ae", x)
-  x <- gsub("ö", "oe", x)
+  x <- gsub("\u00E4", "ae", x)
+  x <- gsub("\u00F6", "oe", x)
   x <- clean_basic(x)
-  x <- gsub("\\b(kaupunki|kunta|lääni)\\b", "", x, perl = TRUE)
+  x <- gsub("\\b(kaupunki|kunta|l\u00E4\u00E4ni)\\b", "", x, perl = TRUE)
   x <- gsub("^helsinki.*", "helsinki", x, perl = TRUE)
   x <- gsub("[0-9]+", "", x, perl = TRUE)
   return(trimws(x))
@@ -525,10 +530,10 @@ normalize_city_greek <- function(x) {
 }
 
 normalize_city_is <- function(x) {
-  x <- gsub("ð", "d", x)
-  x <- gsub("þ", "th", x)
-  x <- gsub("æ", "ae", x)
-  x <- gsub("ö", "oe", x)
+  x <- gsub("\u00F0", "d", x)
+  x <- gsub("\u00FE", "th", x)
+  x <- gsub("\u00E6", "ae", x)
+  x <- gsub("\u00F6", "oe", x)
   x <- clean_basic(x)
   x <- gsub("reykjavik.*", "reykjavik", x, perl = TRUE)
   x <- gsub("[0-9]+", "", x, perl = TRUE)
